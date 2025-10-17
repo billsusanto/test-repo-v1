@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface TimeData {
   hours: number
@@ -40,7 +41,6 @@ export default function Home() {
     const updateTime = () => {
       const now = new Date()
       
-      // Get time for selected timezone
       const timeString = now.toLocaleTimeString('en-US', {
         timeZone: selectedTimezone.zone,
         hour: '2-digit',
@@ -57,7 +57,6 @@ export default function Home() {
         day: 'numeric'
       })
 
-      // Get individual components for analog clock
       const hours = parseInt(now.toLocaleTimeString('en-US', {
         timeZone: selectedTimezone.zone,
         hour: '2-digit',
@@ -85,83 +84,250 @@ export default function Home() {
   const minutesDegrees = ((timeData.minutes + timeData.seconds / 60) / 60) * 360
   const hoursDegrees = ((timeData.hours % 12 + timeData.minutes / 60) / 12) * 360
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100
+      }
+    }
+  }
+
+  const clockVariants = {
+    hidden: { scale: 0, rotate: -180 },
+    visible: {
+      scale: 1,
+      rotate: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 80,
+        damping: 15
+      }
+    }
+  }
+
+  const buttonHoverVariants = {
+    hover: {
+      scale: 1.05,
+      y: -2,
+      transition: {
+        type: 'spring',
+        stiffness: 400,
+        damping: 10
+      }
+    },
+    tap: {
+      scale: 0.95
+    }
+  }
+
   return (
     <main className={isDarkMode ? 'dark' : ''}>
-      <div className="container">
+      <motion.div 
+        className="container"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
         {/* Controls */}
-        <div className="controls">
-          <button 
+        <motion.div 
+          className="controls"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <motion.button 
             className="control-btn"
             onClick={() => setIsDarkMode(!isDarkMode)}
             title="Toggle theme"
+            variants={buttonHoverVariants}
+            whileHover="hover"
+            whileTap="tap"
           >
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
-          <button 
+            <motion.span
+              key={isDarkMode ? 'sun' : 'moon'}
+              initial={{ rotate: -180, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 180, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </motion.span>
+          </motion.button>
+          <motion.button 
             className="control-btn"
             onClick={() => setIs24Hour(!is24Hour)}
             title="Toggle time format"
+            variants={buttonHoverVariants}
+            whileHover="hover"
+            whileTap="tap"
           >
             {is24Hour ? '12H' : '24H'}
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
-        <div className="clock-card">
+        <motion.div 
+          className="clock-card"
+          variants={itemVariants}
+        >
           {/* Title with emoji */}
-          <h1 className="title">
-            <span className="emoji">{selectedTimezone.emoji}</span>
-            {selectedTimezone.name}
-          </h1>
+          <AnimatePresence mode="wait">
+            <motion.h1 
+              className="title"
+              key={selectedTimezone.zone}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.span 
+                className="emoji"
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 3
+                }}
+              >
+                {selectedTimezone.emoji}
+              </motion.span>
+              {selectedTimezone.name}
+            </motion.h1>
+          </AnimatePresence>
 
           {/* Analog Clock */}
-          <div className="analog-clock">
+          <motion.div 
+            className="analog-clock"
+            variants={clockVariants}
+          >
             <div className="clock-face">
               {[...Array(12)].map((_, i) => (
-                <div 
+                <motion.div 
                   key={i} 
                   className="hour-marker" 
                   style={{ transform: `rotate(${i * 30}deg)` }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    delay: 0.8 + i * 0.05,
+                    type: 'spring',
+                    stiffness: 200
+                  }}
                 >
                   <span style={{ transform: `rotate(-${i * 30}deg)` }}>
                     {i === 0 ? 12 : i}
                   </span>
-                </div>
+                </motion.div>
               ))}
-              <div 
+              <motion.div 
                 className="hand hour-hand" 
                 style={{ transform: `rotate(${hoursDegrees}deg)` }}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 1, type: 'spring' }}
               />
-              <div 
+              <motion.div 
                 className="hand minute-hand" 
                 style={{ transform: `rotate(${minutesDegrees}deg)` }}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 1.1, type: 'spring' }}
               />
-              <div 
+              <motion.div 
                 className="hand second-hand" 
                 style={{ transform: `rotate(${secondsDegrees}deg)` }}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 1.2, type: 'spring' }}
               />
-              <div className="center-dot" />
+              <motion.div 
+                className="center-dot"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 1.3, type: 'spring', stiffness: 200 }}
+              />
             </div>
-          </div>
+          </motion.div>
 
           {/* Digital Time */}
-          <div className="time">{timeData.timeString}</div>
-          <div className="date">{timeData.dateString}</div>
+          <AnimatePresence mode="wait">
+            <motion.div 
+              className="time"
+              key={timeData.timeString}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {timeData.timeString}
+            </motion.div>
+          </AnimatePresence>
+
+          <motion.div 
+            className="date"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+          >
+            {timeData.dateString}
+          </motion.div>
 
           {/* Timezone Selector */}
-          <div className="timezone-selector">
-            {timezones.map((tz) => (
-              <button
+          <motion.div 
+            className="timezone-selector"
+            variants={itemVariants}
+          >
+            {timezones.map((tz, index) => (
+              <motion.button
                 key={tz.zone}
                 className={`timezone-btn ${selectedTimezone.zone === tz.zone ? 'active' : ''}`}
                 onClick={() => setSelectedTimezone(tz)}
+                variants={buttonHoverVariants}
+                whileHover="hover"
+                whileTap="tap"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: 1.6 + index * 0.1,
+                  type: 'spring',
+                  stiffness: 100
+                }}
               >
-                <span className="tz-emoji">{tz.emoji}</span>
+                <motion.span 
+                  className="tz-emoji"
+                  animate={selectedTimezone.zone === tz.zone ? {
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 5, -5, 0]
+                  } : {}}
+                  transition={{
+                    duration: 0.5
+                  }}
+                >
+                  {tz.emoji}
+                </motion.span>
                 <span className="tz-city">{tz.city}</span>
-              </button>
+              </motion.button>
             ))}
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </main>
   )
 }
